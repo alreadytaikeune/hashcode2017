@@ -4,21 +4,13 @@ import numpy as np
 import math
 from joblib import Parallel, delayed
 
-def is_slice_valid(p_slice):
-    c, r = tuple(p_slice.shape)
-    s = np.sum(p_slice)
-    return s>=min_ing and s <= c*r-min_ing
-    
 path = sys.argv[1]
-
 with open(path, "r") as _:
-    rows, cols, min_ing, max_tot = [int(x) for x in _.readline().split(" ")]
+    cols, rows, min_ing, max_tot = [int(x) for x in _.readline().split(",")]
     pizza = np.zeros((rows, cols))
     for i, line in enumerate(_.readlines()):
         for j, c in enumerate(line.strip()):
-            pizza[i, j] = 1 if c == "M" else 0
-
-print pizza.shape
+            pizza[i, j] = 1 if c == "H" else 0
 
 valid_slices_sizes = []
 for i in range(1, max_tot+1):
@@ -28,7 +20,14 @@ for i in range(1, max_tot+1):
         valid_slices_sizes.append((i, j))
         if j != i:
             valid_slices_sizes.append((j, i))
-# print valid_slices_sizes
+
+
+
+def is_slice_valid(p_slice):
+    c, r = tuple(p_slice.shape)
+    s = np.sum(p_slice)
+    return s>=min_ing
+
 
 def solve_optimal(pizza):
     rows, cols = tuple(pizza.shape)
@@ -79,21 +78,21 @@ def solve_optimal(pizza):
     print nb
     return sol, score
 
+
 def save_solution(best, path=None):
     best = [b for b in best if (b[2], b[3]) != (0, 0)]
     n = len(best)
     if path is None:
-        path = "sol_{}.txt".format(path)
-    with open(path, "w") as _:
-        _.write(str(n)+"\n")
+        path = "sol_pizza_google.txt".format(path)
+    with open("sol_{}.txt".format(path), "w") as _:
         for b in best:
-            _.write("{} {} {} {}\n".format(b[0], b[1], b[0]+b[2]-1, b[1]+b[3]-1))
+            _.write("{},{},{},{}\n".format(b[1], b[0], b[3], b[2]))
 
 
 def make_slices(rows, cols, offset_r, offset_c):
     slices = []
-    r_step = 15
-    c_step = 15
+    r_step = 10
+    c_step = 10
     for i in range(0, rows, r_step):
         r_length = r_step
         if i + r_length >= rows:
@@ -104,10 +103,9 @@ def make_slices(rows, cols, offset_r, offset_c):
                 c_length = cols-j
             slices.append((i+offset_r, j+offset_c, r_length, c_length))
     return slices
-
 slices = make_slices(rows, cols, 0, 0)
 
-# res = [solve_optimal(pizza[i:i+r_length, j:j+c_length]) for i, j, r_length, c_length in slices]
+
 res = Parallel(n_jobs=4)(delayed(solve_optimal)(pizza[i:i+r_length, j:j+c_length]) for i, j, r_length, c_length in slices)
 best = []
 best_score = 0
@@ -116,7 +114,8 @@ for i, (bs, s) in enumerate(res):
         if bb[2] != 0:
             best.append((bb[0]+slices[i][0], bb[1]+slices[i][1], bb[2], bb[3]))
     best_score += s
-
-# best, best_score = solve_optimal(pizza)
 print best_score
-save_solution(best, "mip_{}.txt".format(path))
+save_solution(best)
+# best, incr = run_local_optim(best, "local_optim_{}.txt".format(path))
+# best_score += incr
+# save_solution(best)

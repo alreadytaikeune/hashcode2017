@@ -3,15 +3,25 @@ import sys
 import copy
 
 path = sys.argv[1]
-rows, cols, min_ing, max_tot = [int(x) for x in sys.argv[2:]]
+is_google = (len(sys.argv) == 6)
+if is_google:
+    rows, cols, min_ing, max_tot = [int(x) for x in sys.argv[2:6]]
+else:
+    cols, rows, min_ing, max_tot = [int(x) for x in sys.argv[2:6]]
 final_slices = []
 with open(path, "r") as _:
     pizza = np.zeros((rows, cols))
     print "{} slices".format(_.readline())
     for i, line in enumerate(_.readlines()):
-        x1, y1, x2, y2 = [int(x) for x in line.split(" ")]
+        if is_google:
+            x1, y1, x2, y2 = [int(x) for x in line.split(" ")]
+        else:
+            x1, y1, x2, y2 = [int(x) for x in line.split(",")]
         pizza[x1:x2+1, y1:y2+1] = 1
-        final_slices.append((x1, y1, x2-x1+1, y2-y1+1))
+        if is_google:
+            final_slices.append((x1, y1, x2-x1+1, y2-y1+1))
+        else:
+            final_slices.append((x1, y1, x2, y2))
 
 
 def save_solution(best, path=None):
@@ -22,7 +32,7 @@ def save_solution(best, path=None):
     with open(path, "w") as _:
         _.write(str(n)+"\n")
         for b in best:
-            _.write("{} {} {} {}\n".format(b[0], b[1], b[0]+b[2]-1, b[1]+b[3]-1))
+            _.write("{} {} {} {}\n".format(b[0], b[1], b[2], b[3]))
 
 def fill_empty_slices(covered_pizza):
     new_slices = []
